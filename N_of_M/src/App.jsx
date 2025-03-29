@@ -5,15 +5,49 @@ import twoImage from "./img/two.jpg";
 
 const App = () => {
     const [response, setResponse] = useState("");
+    const [favorite, setFavorite] = useState([]);
 
     let audioChunks = [];
     let mediaRecorder;
     let audioStream;
 
+    function getCookie(name) {
+        var matches = document.cookie.match(
+            new RegExp(
+                "(?:^|; )" +
+                    name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, "\\$1") +
+                    "=([^;]*)"
+            )
+        );
+        return matches ? decodeURIComponent(matches[1]) : undefined;
+    }
+
+    let d1 = "";
+    let d2 = "display_none";
+
+    if (getCookie("nickname") != undefined) {
+        d1 = "display_none";
+        d2 = "";
+        axios
+            .get(
+                `http://127.0.0.1:8090/favorite2?nickname=${getCookie(
+                    "nickname"
+                )}`
+            )
+            .then((response) => {
+                console.log(response.data[0]);
+                setFavorite(response.data[0]);
+            })
+            .catch((error) => {
+                console.log(error);
+            });
+    }
+
     const uploadAudio = async (blob) => {
         const div = document.querySelector(".load");
         const text = document.querySelector(".load-time");
         const music = document.querySelector(".music");
+        const span2 = document.querySelector(".span2");
 
         text.textContent = "Обработка...";
 
@@ -36,6 +70,7 @@ const App = () => {
                 console.log(ans.data[0][1]);
                 div.classList.add("display_none");
                 music.classList.remove("display_none");
+                span2.classList.remove("display_none");
                 text.textContent = "Запись пошла";
                 text.classList.add("display_none");
                 console.log("Ответ сервера:", ans.data[0]);
@@ -50,8 +85,10 @@ const App = () => {
     const new_window = () => {
         const btn = document.querySelector(".close");
         const music = document.querySelector(".music");
+        const span2 = document.querySelector(".span2");
         btn.classList.remove("display_none");
         music.classList.add("display_none");
+        span2.classList.add("display_none");
     };
 
     const sendData1 = () => {
@@ -72,7 +109,11 @@ const App = () => {
                     alert("Неправильный пароль");
                 } else {
                     console.log("Ok");
-                    alert("Вы вошли");
+                    document.cookie = `nickname=${input1.value};max-age=2629743`;
+                    const left_2 = document.querySelector(".left_2");
+                    const left_3 = document.querySelector(".left_3");
+                    left_2.classList.add("display_none");
+                    left_3.classList.remove("display_none");
                 }
             })
             .catch((error) => {
@@ -93,14 +134,18 @@ const App = () => {
                 console.log("Response:", response.data);
                 if (!response.data[0]) {
                     alert("Такой никнейм есть");
+                } else {
+                    document.cookie = `nickname=${input1.value};max-age=2629743`;
+                    const left_2 = document.querySelector(".left_2");
+                    const left_3 = document.querySelector(".left_3");
+                    left_2.classList.add("display_none");
+                    left_3.classList.remove("display_none");
                 }
             })
             .catch((error) => {
                 console.error("Error:", error);
             });
     };
-
-    
 
     const sendAudioContentToServer = async () => {
         const div = document.querySelector(".load");
@@ -176,16 +221,32 @@ const App = () => {
     };
 
     const exit = () => {
-
-    }
+        document.cookie = `nickname=${getCookie("nickname")};max-age=-1`;
+        window.location.href = "/";
+    };
 
     const click = () => {
-        
-    }
+        if (getCookie("nickname") != undefined) {
+            axios
+                .post("http://127.0.0.1:8090/favorite", {
+                    name: getCookie("nickname"),
+                    res: response,
+                })
+                .then((response) => {
+                    console.log("Response:", response.data);
+                    alert("Песня добавлена");
+                })
+                .catch((error) => {
+                    console.error("Error:", error);
+                });
+        } else {
+            alert("Вы не вошли в аккаунт");
+        }
+    };
 
     return (
         <div className="main">
-            <div className="left left_1 display_none">
+            <div className={`left left_1 ${d1}`}>
                 <div className="text-div">
                     <center>
                         <h2 className="text1">Заряжайся</h2>
@@ -232,22 +293,18 @@ const App = () => {
                     Зарегистрироваться
                 </button>
             </div>
-            <div className="left left_3">
+            <div className={`left left_3 ${d2}`}>
                 <div className="text-div">
                     <center>
                         <h2 className="text1">Любимые</h2>
                     </center>
                 </div>
                 <div className="content">
-                    <center><h2>ПРивет</h2></center>
-                    <center><h2>ПРивет</h2></center>
-                    <center><h2>ПРивет</h2></center>
-                    <center><h2>ПРивет</h2></center>
-                    <center><h2>ПРивет</h2></center>
-                    <center><h2>ПРивет</h2></center>
-                    <center><h2>ПРивет</h2></center>
-                    <center><h2>ПРиветfhfh</h2></center>
-                    <center><h2>ПРивет</h2></center>
+                    {favorite.map((music) => (
+                        <center>
+                            <h2>{music}</h2>
+                        </center>
+                    ))}
                 </div>
 
                 <button className="btn1" onClick={exit}>
@@ -282,7 +339,9 @@ const App = () => {
                         <h2 className="music display_none" onClick={new_window}>
                             {response}
                         </h2>
-                        <span className="span2" onClick={click}><h1>💜</h1></span>
+                        <span className="span2 display_none" onClick={click}>
+                            <h1>💜</h1>
+                        </span>
                     </div>
                 </div>
             </div>
